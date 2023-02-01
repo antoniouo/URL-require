@@ -1,25 +1,81 @@
-import logo from './logo.svg';
-import './App.css';
+import {React, useState} from 'react';
+import validator from 'validator';
+import axios from 'axios';
+import InputField from './components/InputField';
+import Table from './components/Table';
 
-function App() {
+const newUrl = {
+  id: 1,
+  url: "", 
+  result: ""
+};
+
+export default function App() {
+  const [value, setValue] = useState([{ ...newUrl }]);
+  const [lastId, setId] = useState(1);
+
+  function handleChange(event, index) {
+    const valueNew = [...value];
+    valueNew[index].url = event;
+    setValue(valueNew);
+  }
+
+  function addField() {
+    if (value.length < 10) {
+      const added = [...value];
+      const data = { ...newUrl };
+      data.id = lastId + 1;
+      added.push(data);
+      setId((e) => ++e);
+      setValue(added);
+    }
+  }
+
+  function removeField() {
+		if (value.length > 1) {
+    setValue(value.filter((item, index) => index !== value.length - 1));
+		setId((e) => --e);
+		}
+  }
+
+	async function handleClick(index, url) {
+    if (validator.isURL(url)) {
+      await axios
+        .get(url)
+        .then((response) => {
+          if (response.status === 200) {
+            const resNew = [...value];
+            resNew[index].result = response.headers;
+            setValue(resNew);
+          }
+        })
+        .catch(function (error) {
+          if (error.response) {
+            const resNew = [...value];
+            resNew[index].result = error.response.status;
+						setValue(resNew);
+          }
+        });
+    } else {
+      const resNew = [...value];
+      resNew[index].result = "Некорректный URL";
+      setValue(resNew);
+    }
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{display: 'flex'}}>
+			<InputField
+				value={value}
+				handleChange={handleChange}
+				handleClick={handleClick}
+				removeField={removeField}
+				addField={addField}		
+			/>   
+
+			<Table
+				value={value}
+			/>   
     </div>
   );
 }
-
-export default App;
